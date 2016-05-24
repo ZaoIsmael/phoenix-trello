@@ -3,10 +3,26 @@ import Constants                          from '../constants';
 import { Socket }                         from 'phoenix';
 import { httpGet, httpPost, httpDelete }  from '../utils';
 
-function setCurrentUser(dispatch, user) {
+export function setCurrentUser(dispatch, user) {
   dispatch({
     type: Constants.CURRENT_USER,
     currentUser: user,
+  });
+
+  const socket = new Socket('/socket', {
+    params: { token: localStorage.getItem('phoenixAuthToken') },
+  });
+
+  socket.connect();
+
+  const channel = socket.channel(`users:${user.id}`);
+
+  channel.join().receive('ok', () => {
+    dispatch({
+        type: Constants.SOCKET_CONNECTED,
+        socket: socket,
+        channel: channel,
+      });
   });
 }
 
