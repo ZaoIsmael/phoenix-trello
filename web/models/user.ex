@@ -3,6 +3,7 @@ defmodule PhoenixTrello.User do
 
   alias Poison.Encoder
   alias Comeonin.Bcrypt
+  alias PhoenixTrello.Board
 
   schema "users" do
     field :first_name, :string
@@ -10,6 +11,8 @@ defmodule PhoenixTrello.User do
     field :email, :string
     field :encrypted_password, :string
     field :password, :string, virtual: true
+    
+    has_many :owned_boards, Board
 
     timestamps
   end
