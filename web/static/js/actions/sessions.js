@@ -17,6 +17,13 @@ export function setCurrentUser(dispatch, user) {
 
   const channel = socket.channel(`users:${user.id}`);
 
+  channel.on('boards:add', (msg) => {
+    dispatch({
+        type: Constants.BOARDS_ADDED,
+        board: msg.board,
+      });
+  });
+
   channel.join().receive('ok', () => {
     dispatch({
         type: Constants.SOCKET_CONNECTED,

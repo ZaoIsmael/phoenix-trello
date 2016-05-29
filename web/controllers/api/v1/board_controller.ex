@@ -3,7 +3,7 @@ defmodule PhoenixTrello.BoardController do
 
   plug Guardian.Plug.EnsureAuthenticated, handler: PhoenixTrello.SessionController
 
-  alias PhoenixTrello.{Repo, Board}
+  alias PhoenixTrello.{Repo, Board, UserBoard}
 
   def index(conn, _params) do
     owned_boards = Guardian.Plug.current_resource(conn)
@@ -15,19 +15,27 @@ defmodule PhoenixTrello.BoardController do
   end
 
   def create(conn, %{"board" => board_params}) do
-    changeset = Guardian.Plug.current_resource(conn)
-      |> build_assoc(:owned_boards)
-      |> Board.changeset(board_params)
+     current_user = Guardian.Plug.current_resource(conn)
 
-    case Repo.insert(changeset) do
-      {:ok, board} ->
-        conn
-        |> put_status(:created)
-        |> render("show.json", board: board )
-      {:error, changeset} ->
-        conn
-        |> put_status(:unprocessable_entity)
-        |> render("error.json", changeset: changeset)
-    end
-  end
+     changeset = current_user
+       |> build_assoc(:owned_boards)
+       |> Board.changeset(board_params)
+
+     if changeset.valid? do
+       board = Repo.insert!(changeset)
+
+       board
+       |> build_assoc(:user_boards)
+       |> UserBoard.changeset(%{user_id: current_user.id})
+       |> Repo.insert!
+
+       conn
+       |> put_status(:created)
+       |> render("show.json", board: board )
+     else
+       conn
+       |> put_status(:unprocessable_entity)
+       |> render("error.json", changeset: changeset)
+     end
+   end
 end
